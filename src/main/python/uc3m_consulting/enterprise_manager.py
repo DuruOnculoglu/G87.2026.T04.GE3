@@ -89,34 +89,34 @@ class EnterpriseManager:
                          budget: str):
         """registers a new project"""
         self.validate_cif(company_cif)
-        mr = re.compile(r"^[a-zA-Z0-9]{5,10}")
-        res = mr.fullmatch(project_acronym)
-        if not res:
+        acronym_pattern = re.compile(r"^[a-zA-Z0-9]{5,10}")
+        match_result = acronym_pattern.fullmatch(project_acronym)
+        if not match_result:
             raise EnterpriseManagementException("Invalid acronym")
-        md = re.compile(r"^.{10,30}$")
-        res = md.fullmatch(project_description)
-        if not res:
+        description_pattern = re.compile(r"^.{10,30}$")
+        match_result = description_pattern.fullmatch(project_description)
+        if not match_result:
             raise EnterpriseManagementException("Invalid description format")
 
-        mr = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
-        res = mr.fullmatch(department)
-        if not res:
+        department_pattern = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
+        match_result = department_pattern.fullmatch(department)
+        if not match_result:
             raise EnterpriseManagementException("Invalid department")
 
         self.validate_starting_date(date)
 
         try:
-            f_bdgt  = float(budget)
+            budget_float  = float(budget)
         except ValueError as exc:
             raise EnterpriseManagementException("Invalid budget amount") from exc
 
-        n_str = str(f_bdgt)
-        if '.' in n_str:
-            decimales = len(n_str.split('.')[1])
-            if decimales > 2:
+        budget_str = str(budget_float)
+        if '.' in budget_str:
+            decimals = len(budget_str.split('.')[1])
+            if decimals > 2:
                 raise EnterpriseManagementException("Invalid budget amount")
 
-        if f_bdgt < 50000 or f_bdgt > 1000000:
+        if budget_float < 50000 or budget_float > 1000000:
             raise EnterpriseManagementException("Invalid budget amount")
 
 
@@ -129,21 +129,21 @@ class EnterpriseManager:
 
         try:
             with open(PROJECTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-                t_l = json.load(file)
+                project_list = json.load(file)
         except FileNotFoundError:
-            t_l = []
+            project_list = []
         except json.JSONDecodeError as ex:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
-        for t_i in t_l:
-            if t_i == new_project.to_json():
+        for project_item in project_list:
+            if project_item == new_project.to_json():
                 raise EnterpriseManagementException("Duplicated project in projects list")
 
-        t_l.append(new_project.to_json())
+        project_list.append(new_project.to_json())
 
         try:
             with open(PROJECTS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
-                json.dump(t_l, file, indent=2)
+                json.dump(project_list, file, indent=2)
         except FileNotFoundError as ex:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
         except json.JSONDecodeError as ex:
