@@ -21,9 +21,7 @@ class EnterpriseManager:
         """validates a cif number """
         if not isinstance(cif, str):
             raise EnterpriseManagementException("CIF code must be a string")
-        # cif_pattern = re.compile(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$")
-        # if not cif_pattern.fullmatch(cif):
-        #     raise EnterpriseManagementException("Invalid CIF format")
+
         EnterpriseManager.validate_pattern(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$",
                                            cif, "Invalid CIF format")
 
@@ -63,43 +61,20 @@ class EnterpriseManager:
             raise EnterpriseManagementException("CIF type not supported")
         return True
 
-    @staticmethod
-    def validate_date(date_str):
-        try:
-            return datetime.strptime(date_str, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
-
-    @staticmethod
-    def validate_pattern(pattern, value, message):
-        if not re.compile(pattern).fullmatch(value):
-            raise EnterpriseManagementException(message)
-
     def validate_starting_date(self, date_str):
         """validates the date format using regex"""
-        # date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        # matched_result = date_pattern.fullmatch(date_str)
-        # if not matched_result:
-        #     raise EnterpriseManagementException("Invalid date format")
         EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str, "Invalid date format")
-
-        # try:
-        #     my_date = datetime.strptime(date_str, "%d/%m/%Y").date()
-        # except ValueError as ex:
-        #     raise EnterpriseManagementException("Invalid date format") from ex
 
         my_date = EnterpriseManager.validate_date(date_str)
 
         if my_date < datetime.now(timezone.utc).date():
             raise EnterpriseManagementException("Project's date must be today or later.")
-
         if my_date.year < 2025 or my_date.year > 2050:
             raise EnterpriseManagementException("Invalid date format")
         return date_str
 
     #pylint: disable=too-many-arguments, too-many-positional-arguments
-
     def register_project(self,
                          company_cif: str,
                          project_acronym: str,
@@ -108,26 +83,12 @@ class EnterpriseManager:
                          date: str,
                          budget: str):
         """registers a new project"""
+
         self.validate_cif(company_cif)
-        # acronym_pattern = re.compile(r"^[a-zA-Z0-9]{5,10}")
-        # match_result = acronym_pattern.fullmatch(project_acronym)
-        # if not match_result:
-        #     raise EnterpriseManagementException("Invalid acronym")
+
         EnterpriseManager.validate_pattern(r"^[a-zA-Z0-9]{5,10}",
                                            project_acronym,"Invalid acronym")
-
-        # description_pattern = re.compile(r"^.{10,30}$")
-        # match_result = description_pattern.fullmatch(project_description)
-        # if not match_result:
-        #     raise EnterpriseManagementException("Invalid description format")
-
         EnterpriseManager.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
-
-        # department_pattern = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
-        # match_result = department_pattern.fullmatch(department)
-        # if not match_result:
-        #     raise EnterpriseManagementException("Invalid department")
-
         EnterpriseManager.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,
                                            "Invalid department")
 
@@ -156,14 +117,6 @@ class EnterpriseManager:
                                         starting_date=date,
                                         project_budget=budget)
 
-        # try:
-        #     with open(PROJECTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-        #         project_list = json.load(file)
-        # except FileNotFoundError:
-        #     project_list = []
-        # except json.JSONDecodeError as ex:
-        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
-
         project_list = self.load_json_file(PROJECTS_STORE_FILE, [])
 
         for project_item in project_list:
@@ -171,14 +124,6 @@ class EnterpriseManager:
                 raise EnterpriseManagementException("Duplicated project in projects list")
 
         project_list.append(new_project.to_json())
-
-        # try:
-        #     with open(PROJECTS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
-        #         json.dump(project_list, file, indent=2)
-        # except FileNotFoundError as ex:
-        #     raise EnterpriseManagementException("Wrong file  or file path") from ex
-        # except json.JSONDecodeError as ex:
-        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
         self.save_json_file(PROJECTS_STORE_FILE, project_list)
 
@@ -201,19 +146,9 @@ class EnterpriseManager:
             EnterpriseManagementException: On invalid date, file IO errors,
                 missing data, or cryptographic integrity failure.
         """
-        # date_format = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        # is_valid_format = date_format.fullmatch(date_str)
-        # if not is_valid_format:
-        #     raise EnterpriseManagementException("Invalid date format")
-
         EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str,"Invalid date format")
-
         EnterpriseManager.validate_date(date_str)
-        # try:
-        #     datetime.strptime(date_str, "%d/%m/%Y").date()
-        # except ValueError as ex:
-        #     raise EnterpriseManagementException("Invalid date format") from ex
 
         # open documents
         try:
@@ -254,22 +189,8 @@ class EnterpriseManager:
              "Numfiles": valid_counter,
              }
 
-        # try:
-        #     with open(TEST_NUMDOCS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-        #         store_report = json.load(file)
-        # except FileNotFoundError:
-        #     store_report = []
-        # except json.JSONDecodeError as ex:
-        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
-
         store_report = self.load_json_file(TEST_NUMDOCS_STORE_FILE, [])
         store_report.append(data_input)
-
-        # try:
-        #     with open(TEST_NUMDOCS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
-        #         json.dump(store_report, file, indent=2)
-        # except FileNotFoundError as ex:
-        #     raise EnterpriseManagementException("Wrong file  or file path") from ex
 
         self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
 
@@ -277,7 +198,6 @@ class EnterpriseManager:
 
     @staticmethod
     def load_json_file(path, default_value):
-
         """Reads a JSON file, returning the default value if the file does not exist"""
         try:
             with open(path, "r", encoding="utf-8", newline="") as file:
@@ -289,6 +209,7 @@ class EnterpriseManager:
 
     @staticmethod
     def save_json_file(path, data):
+        """Writes a JSON file, returning the default value if the file does not exist"""
         try:
             with open(path, "w", encoding="utf-8", newline="") as file:
                 json.dump(data, file, indent=2)
@@ -296,3 +217,18 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
         except json.JSONDecodeError as ex:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+
+    @staticmethod
+    def validate_date(date_str):
+        """Validates a date string to ensure it matches expected format"""
+        try:
+            return datetime.strptime(date_str, "%d/%m/%Y").date()
+        except ValueError as ex:
+            raise EnterpriseManagementException("Invalid date format") from ex
+
+    @staticmethod
+    def validate_pattern(pattern, value, message):
+        """Validates a pattern string to ensure it matches expected format"""
+        if not re.compile(pattern).fullmatch(value):
+            raise EnterpriseManagementException(message)
+
