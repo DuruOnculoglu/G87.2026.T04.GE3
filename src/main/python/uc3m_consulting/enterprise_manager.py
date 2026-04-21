@@ -135,7 +135,7 @@ class EnterpriseManager:
         # except json.JSONDecodeError as ex:
         #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
-        project_list = self.open_json_default(self, PROJECTS_STORE_FILE)
+        project_list = self.load_json_file(PROJECTS_STORE_FILE, [])
 
         for project_item in project_list:
             if project_item == new_project.to_json():
@@ -143,25 +143,17 @@ class EnterpriseManager:
 
         project_list.append(new_project.to_json())
 
-        try:
-            with open(PROJECTS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
-                json.dump(project_list, file, indent=2)
-        except FileNotFoundError as ex:
-            raise EnterpriseManagementException("Wrong file  or file path") from ex
-        except json.JSONDecodeError as ex:
-            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
-        return new_project.project_id
+        # try:
+        #     with open(PROJECTS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
+        #         json.dump(project_list, file, indent=2)
+        # except FileNotFoundError as ex:
+        #     raise EnterpriseManagementException("Wrong file  or file path") from ex
+        # except json.JSONDecodeError as ex:
+        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
-    @staticmethod
-    def open_json_default(self, path):
-        try:
-            with open(path, "r", encoding="utf-8", newline="") as file:
-                default = json.load(file)
-        except FileNotFoundError:
-            default = []
-        except json.JSONDecodeError as ex:
-            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
-        return default
+        self.save_json_file(PROJECTS_STORE_FILE, project_list)
+
+        return new_project.project_id
 
     def find_docs(self, date_str):
         """
@@ -239,12 +231,37 @@ class EnterpriseManager:
         # except json.JSONDecodeError as ex:
         #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
-        store_report = self.open_json_default(self, TEST_NUMDOCS_STORE_FILE)
+        store_report = self.load_json_file(TEST_NUMDOCS_STORE_FILE, [])
         store_report.append(data_input)
 
+        # try:
+        #     with open(TEST_NUMDOCS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
+        #         json.dump(store_report, file, indent=2)
+        # except FileNotFoundError as ex:
+        #     raise EnterpriseManagementException("Wrong file  or file path") from ex
+
+        self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
+
+        return valid_counter
+
+    @staticmethod
+    def load_json_file(path, default_value):
+
+        """Reads a JSON file, returning the default value if the file does not exist"""
         try:
-            with open(TEST_NUMDOCS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
-                json.dump(store_report, file, indent=2)
+            with open(path, "r", encoding="utf-8", newline="") as file:
+                return json.load(file)
+        except FileNotFoundError:
+            return default_value
+        except json.JSONDecodeError as ex:
+            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+
+    @staticmethod
+    def save_json_file(path, data):
+        try:
+            with open(path, "w", encoding="utf-8", newline="") as file:
+                json.dump(data, file, indent=2)
         except FileNotFoundError as ex:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
-        return valid_counter
+        except json.JSONDecodeError as ex:
+            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
