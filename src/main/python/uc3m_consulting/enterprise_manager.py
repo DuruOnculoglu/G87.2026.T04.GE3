@@ -61,6 +61,16 @@ class EnterpriseManager:
             raise EnterpriseManagementException("CIF type not supported")
         return True
 
+    @staticmethod
+    def validate_date(date_str):
+        try:
+            return datetime.strptime(date_str, "%d/%m/%Y").date()
+        except ValueError as ex:
+            raise EnterpriseManagementException("Invalid date format") from ex
+
+    # @staticmethod
+    # def validate_pattern():
+
     def validate_starting_date(self, date_str):
         """validates the date format using regex"""
         date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
@@ -68,10 +78,12 @@ class EnterpriseManager:
         if not matched_result:
             raise EnterpriseManagementException("Invalid date format")
 
-        try:
-            my_date = datetime.strptime(date_str, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
+        # try:
+        #     my_date = datetime.strptime(date_str, "%d/%m/%Y").date()
+        # except ValueError as ex:
+        #     raise EnterpriseManagementException("Invalid date format") from ex
+
+        my_date = EnterpriseManager.validate_date(date_str)
 
         if my_date < datetime.now(timezone.utc).date():
             raise EnterpriseManagementException("Project's date must be today or later.")
@@ -79,7 +91,9 @@ class EnterpriseManager:
         if my_date.year < 2025 or my_date.year > 2050:
             raise EnterpriseManagementException("Invalid date format")
         return date_str
+
     #pylint: disable=too-many-arguments, too-many-positional-arguments
+
     def register_project(self,
                          company_cif: str,
                          project_acronym: str,
@@ -178,11 +192,11 @@ class EnterpriseManager:
         if not is_valid_format:
             raise EnterpriseManagementException("Invalid date format")
 
-        try:
-            datetime.strptime(date_str, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
-
+        EnterpriseManager.validate_date(date_str)
+        # try:
+        #     datetime.strptime(date_str, "%d/%m/%Y").date()
+        # except ValueError as ex:
+        #     raise EnterpriseManagementException("Invalid date format") from ex
 
         # open documents
         try:
