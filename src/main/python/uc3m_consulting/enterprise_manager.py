@@ -21,9 +21,11 @@ class EnterpriseManager:
         """validates a cif number """
         if not isinstance(cif, str):
             raise EnterpriseManagementException("CIF code must be a string")
-        cif_pattern = re.compile(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$")
-        if not cif_pattern.fullmatch(cif):
-            raise EnterpriseManagementException("Invalid CIF format")
+        # cif_pattern = re.compile(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$")
+        # if not cif_pattern.fullmatch(cif):
+        #     raise EnterpriseManagementException("Invalid CIF format")
+        EnterpriseManager.validate_pattern(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$",
+                                           cif, "Invalid CIF format")
 
         cif_letter = cif[0]
         cif_digits = cif[1:8]
@@ -68,15 +70,19 @@ class EnterpriseManager:
         except ValueError as ex:
             raise EnterpriseManagementException("Invalid date format") from ex
 
-    # @staticmethod
-    # def validate_pattern():
+    @staticmethod
+    def validate_pattern(pattern, value, message):
+        if not re.compile(pattern).fullmatch(value):
+            raise EnterpriseManagementException(message)
 
     def validate_starting_date(self, date_str):
         """validates the date format using regex"""
-        date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        matched_result = date_pattern.fullmatch(date_str)
-        if not matched_result:
-            raise EnterpriseManagementException("Invalid date format")
+        # date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
+        # matched_result = date_pattern.fullmatch(date_str)
+        # if not matched_result:
+        #     raise EnterpriseManagementException("Invalid date format")
+        EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
+                                           date_str, "Invalid date format")
 
         # try:
         #     my_date = datetime.strptime(date_str, "%d/%m/%Y").date()
@@ -103,19 +109,27 @@ class EnterpriseManager:
                          budget: str):
         """registers a new project"""
         self.validate_cif(company_cif)
-        acronym_pattern = re.compile(r"^[a-zA-Z0-9]{5,10}")
-        match_result = acronym_pattern.fullmatch(project_acronym)
-        if not match_result:
-            raise EnterpriseManagementException("Invalid acronym")
-        description_pattern = re.compile(r"^.{10,30}$")
-        match_result = description_pattern.fullmatch(project_description)
-        if not match_result:
-            raise EnterpriseManagementException("Invalid description format")
+        # acronym_pattern = re.compile(r"^[a-zA-Z0-9]{5,10}")
+        # match_result = acronym_pattern.fullmatch(project_acronym)
+        # if not match_result:
+        #     raise EnterpriseManagementException("Invalid acronym")
+        EnterpriseManager.validate_pattern(r"^[a-zA-Z0-9]{5,10}",
+                                           project_acronym,"Invalid acronym")
 
-        department_pattern = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
-        match_result = department_pattern.fullmatch(department)
-        if not match_result:
-            raise EnterpriseManagementException("Invalid department")
+        # description_pattern = re.compile(r"^.{10,30}$")
+        # match_result = description_pattern.fullmatch(project_description)
+        # if not match_result:
+        #     raise EnterpriseManagementException("Invalid description format")
+
+        EnterpriseManager.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
+
+        # department_pattern = re.compile(r"(HR|FINANCE|LEGAL|LOGISTICS)")
+        # match_result = department_pattern.fullmatch(department)
+        # if not match_result:
+        #     raise EnterpriseManagementException("Invalid department")
+
+        EnterpriseManager.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,
+                                           "Invalid department")
 
         self.validate_starting_date(date)
 
@@ -125,6 +139,7 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Invalid budget amount") from exc
 
         budget_str = str(budget_float)
+
         if '.' in budget_str:
             decimals = len(budget_str.split('.')[1])
             if decimals > 2:
@@ -186,11 +201,13 @@ class EnterpriseManager:
             EnterpriseManagementException: On invalid date, file IO errors,
                 missing data, or cryptographic integrity failure.
         """
-        date_format = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
-        is_valid_format = date_format.fullmatch(date_str)
+        # date_format = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
+        # is_valid_format = date_format.fullmatch(date_str)
+        # if not is_valid_format:
+        #     raise EnterpriseManagementException("Invalid date format")
 
-        if not is_valid_format:
-            raise EnterpriseManagementException("Invalid date format")
+        EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
+                                           date_str,"Invalid date format")
 
         EnterpriseManager.validate_date(date_str)
         # try:
