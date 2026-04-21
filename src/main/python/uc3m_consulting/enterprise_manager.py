@@ -127,13 +127,15 @@ class EnterpriseManager:
                                         starting_date=date,
                                         project_budget=budget)
 
-        try:
-            with open(PROJECTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-                project_list = json.load(file)
-        except FileNotFoundError:
-            project_list = []
-        except json.JSONDecodeError as ex:
-            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+        # try:
+        #     with open(PROJECTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
+        #         project_list = json.load(file)
+        # except FileNotFoundError:
+        #     project_list = []
+        # except json.JSONDecodeError as ex:
+        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+
+        project_list = self.open_json_default(self, PROJECTS_STORE_FILE)
 
         for project_item in project_list:
             if project_item == new_project.to_json():
@@ -150,6 +152,16 @@ class EnterpriseManager:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
         return new_project.project_id
 
+    @staticmethod
+    def open_json_default(self, path):
+        try:
+            with open(path, "r", encoding="utf-8", newline="") as file:
+                default = json.load(file)
+        except FileNotFoundError:
+            default = []
+        except json.JSONDecodeError as ex:
+            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+        return default
 
     def find_docs(self, date_str):
         """
@@ -219,14 +231,17 @@ class EnterpriseManager:
              "Numfiles": valid_counter,
              }
 
-        try:
-            with open(TEST_NUMDOCS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-                store_report = json.load(file)
-        except FileNotFoundError:
-            store_report = []
-        except json.JSONDecodeError as ex:
-            raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+        # try:
+        #     with open(TEST_NUMDOCS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
+        #         store_report = json.load(file)
+        # except FileNotFoundError:
+        #     store_report = []
+        # except json.JSONDecodeError as ex:
+        #     raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
+
+        store_report = self.open_json_default(self, TEST_NUMDOCS_STORE_FILE)
         store_report.append(data_input)
+
         try:
             with open(TEST_NUMDOCS_STORE_FILE, "w", encoding="utf-8", newline="") as file:
                 json.dump(store_report, file, indent=2)
