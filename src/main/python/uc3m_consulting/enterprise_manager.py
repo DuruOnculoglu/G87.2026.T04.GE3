@@ -61,7 +61,7 @@ class EnterpriseManager:
             raise EnterpriseManagementException("CIF type not supported")
         return True
 
-    def validate_starting_date(self, date_str):
+def validate_starting_date(self, date_str):
         """validates the date format using regex"""
         date_pattern = re.compile(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$")
         matched_result = date_pattern.fullmatch(date_str)
