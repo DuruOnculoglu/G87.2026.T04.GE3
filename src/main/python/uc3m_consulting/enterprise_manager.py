@@ -16,14 +16,14 @@ class EnterpriseManager:
     def __init__(self):
         pass
 
+
     @staticmethod
     def validate_cif(cif: str):
         """validates a cif number """
         if not isinstance(cif, str):
             raise EnterpriseManagementException("CIF code must be a string")
 
-        EnterpriseManager.validate_pattern(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$",
-                                           cif, "Invalid CIF format")
+        EnterpriseManager.validate_pattern(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$", cif, "Invalid CIF format")
 
         cif_letter = cif[0]
         cif_digits = cif[1:8]
@@ -63,10 +63,10 @@ class EnterpriseManager:
 
     def validate_starting_date(self, date_str):
         """validates the date format using regex"""
-        EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
+        self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str, "Invalid date format")
 
-        my_date = EnterpriseManager.validate_date(date_str)
+        my_date = self.validate_date(date_str)
 
         if my_date < datetime.now(timezone.utc).date():
             raise EnterpriseManagementException("Project's date must be today or later.")
@@ -86,10 +86,10 @@ class EnterpriseManager:
 
         self.validate_cif(company_cif)
 
-        EnterpriseManager.validate_pattern(r"^[a-zA-Z0-9]{5,10}",
+        self.validate_pattern(r"^[a-zA-Z0-9]{5,10}",
                                            project_acronym,"Invalid acronym")
-        EnterpriseManager.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
-        EnterpriseManager.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,
+        self.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
+        self.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,
                                            "Invalid department")
 
         self.validate_starting_date(date)
@@ -146,9 +146,9 @@ class EnterpriseManager:
             EnterpriseManagementException: On invalid date, file IO errors,
                 missing data, or cryptographic integrity failure.
         """
-        EnterpriseManager.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
+        self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str,"Invalid date format")
-        EnterpriseManager.validate_date(date_str)
+        self.validate_date(date_str)
 
         # open documents
         try:
@@ -195,7 +195,6 @@ class EnterpriseManager:
         self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
 
         return valid_counter
-
     @staticmethod
     def load_json_file(path, default_value):
         """Reads a JSON file, returning the default value if the file does not exist"""
@@ -231,4 +230,6 @@ class EnterpriseManager:
         """Validates a pattern string to ensure it matches expected format"""
         if not re.compile(pattern).fullmatch(value):
             raise EnterpriseManagementException(message)
+
+
 
