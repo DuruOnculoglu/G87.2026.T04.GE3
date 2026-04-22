@@ -12,7 +12,7 @@ from uc3m_consulting.enterprise_manager_config import (PROJECTS_STORE_FILE,
 from uc3m_consulting.project_document import ProjectDocument
 
 class EnterpriseManager:
-    """Class for providing the methods for managing the orders"""
+    """Manages enterprise projects and document validation operations"""
     def __init__(self):
         pass
 
@@ -24,10 +24,9 @@ class EnterpriseManager:
                          department: str,
                          date: str,
                          budget: str):
-        """registers a new project"""
+        """Creates and stores a validated enterprise project"""
 
         self.validate_cif(company_cif)
-
         self.validate_pattern(r"^[a-zA-Z0-9]{5,10}", project_acronym,"Invalid acronym")
         self.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
         self.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,"Invalid department")
@@ -56,31 +55,18 @@ class EnterpriseManager:
 
     def find_docs(self, date_str):
         """
-        Generates a JSON report counting valid documents for a specific date.
-
-        Checks cryptographic hashes and timestamps to ensure historical data integrity.
-        Saves the output to 'resultado.json'.
-
-        Args:
-            date_str (str): date to query.
-
-        Returns:
-            number of documents found if report is successfully generated and saved.
-
-        Raises:
-            EnterpriseManagementException: On invalid date, file IO errors,
-                missing data, or cryptographic integrity failure.
+        Counts valid documents for a given date and generates a report.
+        Ensures document integrity using signature verification.
         """
         self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str,"Invalid date format")
         self.validate_date(date_str)
-        date_list = self.get_documents(TEST_DOCUMENTS_STORE_FILE)
+        documents = self.get_documents(TEST_DOCUMENTS_STORE_FILE)
 
         valid_counter = 0
 
-        # loop to find
-        for date_element in date_list:
-            if self.validate_date_element(date_element, date_str):
+        for document in documents:
+            if self.validate_document(document, date_str):
                 valid_counter += 1
 
         if valid_counter == 0:
@@ -92,7 +78,7 @@ class EnterpriseManager:
 
     @staticmethod
     def validate_cif(cif: str):
-        """validates a cif number """
+        """Validates Spanish CIF identification number format and control digit. """
         if not isinstance(cif, str):
             raise EnterpriseManagementException("CIF code must be a string")
 
@@ -135,7 +121,7 @@ class EnterpriseManager:
         return True
 
     def validate_starting_date(self, date_str):
-        """validates the date format using regex"""
+        """Validates the project start date format and constraints"""
         self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                               date_str, "Invalid date format")
 
@@ -157,13 +143,13 @@ class EnterpriseManager:
 
     @staticmethod
     def validate_pattern(pattern, value, message):
-        """Validates a pattern string to ensure it matches expected format"""
+        """Validates whether a value matches a regular expression pattern."""
         if not re.compile(pattern).fullmatch(value):
             raise EnterpriseManagementException(message)
 
     @staticmethod
     def validate_budget(budget: str):
-        """Parses budget string into float"""
+        """Validates budget format and range constraints."""
         try:
             budget_float = float(budget)
         except ValueError as exc:
@@ -178,30 +164,27 @@ class EnterpriseManager:
         if budget_float < 50000 or budget_float > 1000000:
             raise EnterpriseManagementException("Invalid budget amount")
 
-    def validate_date_element(self, date_element, date_str):
-        """Validates date string to ensure it matches expected format"""
+    def validate_document(self, document, date_str):
+        """Checks whether a document matches the given date and validates its integrity."""
 
-        time_val = date_element["register_date"]
+        time_val = document["register_date"]
 
-        # string conversion for easy match
-        date_string_convert = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
+        formatted_date = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
 
-        if date_string_convert == date_str:
+        if formatted_date == date_str:
             date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
             with freeze_time(date_object):
-                # check the project id (thanks to freezetime)
-                # if project_id are different then the data has been manipulated
-                self.validate_document_signature(date_element)
+                self.validate_document_signature(document)
             return True
         return False
 
     @staticmethod
-    def validate_document_signature(date_element):
+    def validate_document_signature(document):
         """Validates document signature integrity"""
 
-        project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
+        project_doc = ProjectDocument(document["project_id"], document["file_name"])
 
-        if project_doc.document_signature != date_element["document_signature"]:
+        if project_doc.document_signature != document["document_signature"]:
             raise EnterpriseManagementException("Inconsistent document signature")
 
     @staticmethod
@@ -229,7 +212,6 @@ class EnterpriseManager:
     @staticmethod
     def get_documents(path):
         """Handles file loading with exception management"""
-        # For find_docs
         try:
             with open(path, "r", encoding="utf-8", newline="") as file:
                 return json.load(file)
@@ -239,7 +221,6 @@ class EnterpriseManager:
 
 
     def write_report(self, date_str, valid_counter):
-        # prepare json text
         date_now = datetime.now(timezone.utc).timestamp()
         data_input = {"Querydate": date_str,
                       "ReportDate": date_now,
