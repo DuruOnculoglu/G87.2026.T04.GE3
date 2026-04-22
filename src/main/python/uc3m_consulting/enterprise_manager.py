@@ -94,17 +94,7 @@ class EnterpriseManager:
 
         self.validate_starting_date(date)
 
-        budget_float = EnterpriseManager.parse_budget(budget)
-        budget_str = str(budget_float)
-
-        if '.' in budget_str:
-            decimals = len(budget_str.split('.')[1])
-            if decimals > 2:
-                raise EnterpriseManagementException("Invalid budget amount")
-
-        if budget_float < 50000 or budget_float > 1000000:
-            raise EnterpriseManagementException("Invalid budget amount")
-
+        self.check_budget(budget)
 
         new_project = EnterpriseProject(company_cif=company_cif,
                                         project_acronym=project_acronym,
@@ -156,6 +146,7 @@ class EnterpriseManager:
 
         if valid_counter == 0:
             raise EnterpriseManagementException("No documents found")
+
         # prepare json text
         date_now = datetime.now(timezone.utc).timestamp()
 
@@ -208,12 +199,21 @@ class EnterpriseManager:
             raise EnterpriseManagementException(message)
 
     @staticmethod
-    def parse_budget(budget: str) -> float: #expected to return float
+    def check_budget(budget: str):
         """Parses budget string into float"""
         try:
-            return float(budget)
+            budget_float = float(budget)
         except ValueError as exc:
             raise EnterpriseManagementException("Invalid budget amount") from exc
+
+        budget_str = str(budget_float)
+        if '.' in budget_str:
+            decimals = len(budget_str.split('.')[1])
+            if decimals > 2:
+                raise EnterpriseManagementException("Invalid budget amount")
+
+        if budget_float < 50000 or budget_float > 1000000:
+            raise EnterpriseManagementException("Invalid budget amount")
 
     @staticmethod
     def load_documents():
