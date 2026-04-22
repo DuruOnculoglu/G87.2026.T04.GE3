@@ -12,6 +12,7 @@ from uc3m_consulting.enterprise_manager_config import (PROJECTS_STORE_FILE,
 from uc3m_consulting.project_document import ProjectDocument
 
 class EnterpriseManager(object):
+    """ This is a singleton implementation of the Enterprise Manager Class"""
 
     class __EnterpriseManager():
         """Manages enterprise projects and document validation operations"""
@@ -84,7 +85,8 @@ class EnterpriseManager(object):
             if not isinstance(cif, str):
                 raise EnterpriseManagementException("CIF code must be a string")
 
-            EnterpriseManager.__EnterpriseManager.validate_pattern(r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$", cif, "Invalid CIF format")
+            EnterpriseManager.__EnterpriseManager.validate_pattern(
+                r"^[ABCDEFGHJKNPQRSUVW]\d{7}[0-9A-J]$", cif, "Invalid CIF format")
 
             cif_letter = cif[0]
             cif_digits = cif[1:8]
@@ -93,9 +95,9 @@ class EnterpriseManager(object):
             even_sum = 0
             odd_sum = 0
 
-            for i in range(len(cif_digits)):
+            for i, digit in enumerate(cif_digits):
                 if i % 2 == 0:
-                    doubled = int(cif_digits[i]) * 2
+                    doubled = int(digit) * 2
                     if doubled > 9:
                         even_sum = even_sum + (doubled // 10) + (doubled % 10)
                     else:
