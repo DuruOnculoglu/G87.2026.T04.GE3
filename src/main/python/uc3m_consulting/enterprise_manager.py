@@ -145,14 +145,7 @@ class EnterpriseManager:
         self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str,"Invalid date format")
         self.validate_date(date_str)
-
-        # open documents
-        try:
-            with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-                date_list = json.load(file)
-        except FileNotFoundError as ex:
-            raise EnterpriseManagementException("Wrong file  or file path") from ex
-
+        date_list = self._load_documents()
 
         valid_counter = 0
 
@@ -167,13 +160,10 @@ class EnterpriseManager:
                 date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
                 with freeze_time(date_object):
                     # check the project id (thanks to freezetime)
-                    # if project_id are different then the data has been
-                    #manipulated
-                    project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
-                    if project_doc.document_signature == date_element["document_signature"]:
-                        valid_counter = valid_counter + 1
-                    else:
-                        raise EnterpriseManagementException("Inconsistent document signature")
+                    # if project_id are different then the data has been manipulated
+                    self._validate_document_signature(date_element)
+
+                valid_counter += 1
 
         if valid_counter == 0:
             raise EnterpriseManagementException("No documents found")
@@ -191,6 +181,27 @@ class EnterpriseManager:
         self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
 
         return valid_counter
+
+    @staticmethod
+    def _load_documents():
+        """Handles file loading with exception management"""
+
+        try:
+            with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
+                return json.load(file)
+
+        except FileNotFoundError as ex:
+            raise EnterpriseManagementException("Wrong file  or file path") from ex
+
+    @staticmethod
+    def _validate_document_signature(date_element):
+        """Validates document signature integrity"""
+
+        project_doc = ProjectDocument(date_element["project_id"],date_element["file_name"])
+
+        if project_doc.document_signature != date_element["document_signature"]:
+            raise EnterpriseManagementException("Inconsistent document signature")
+
     @staticmethod
     def load_json_file(path, default_value):
         """Reads a JSON file, returning the default value if the file does not exist"""
