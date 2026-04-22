@@ -94,7 +94,7 @@ class EnterpriseManager:
 
         self.validate_starting_date(date)
 
-        budget_float = EnterpriseManager._parse_budget(budget)
+        budget_float = EnterpriseManager.parse_budget(budget)
         budget_str = str(budget_float)
 
         if '.' in budget_str:
@@ -145,7 +145,7 @@ class EnterpriseManager:
         self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
                                            date_str,"Invalid date format")
         self.validate_date(date_str)
-        date_list = self._load_documents()
+        date_list = self.load_documents()
 
         valid_counter = 0
 
@@ -161,7 +161,7 @@ class EnterpriseManager:
                 with freeze_time(date_object):
                     # check the project id (thanks to freezetime)
                     # if project_id are different then the data has been manipulated
-                    self._validate_document_signature(date_element)
+                    self.validate_document_signature(date_element)
 
                 valid_counter += 1
 
@@ -219,7 +219,7 @@ class EnterpriseManager:
             raise EnterpriseManagementException(message)
 
     @staticmethod
-    def _parse_budget(budget: str) -> float:
+    def parse_budget(budget: str) -> float: #expected to return float
         """Parses budget string into float"""
         try:
             return float(budget)
@@ -227,7 +227,7 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Invalid budget amount") from exc
 
     @staticmethod
-    def _load_documents():
+    def load_documents():
         """Handles file loading with exception management"""
         # For find_docs
         try:
@@ -238,7 +238,7 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
 
     @staticmethod
-    def _validate_document_signature(date_element):
+    def validate_document_signature(date_element):
         """Validates document signature integrity"""
 
         project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
