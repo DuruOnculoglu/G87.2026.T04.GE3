@@ -16,6 +16,79 @@ class EnterpriseManager:
     def __init__(self):
         pass
 
+    #pylint: disable=too-many-arguments, too-many-positional-arguments
+    def register_project(self,
+                         company_cif: str,
+                         project_acronym: str,
+                         project_description: str,
+                         department: str,
+                         date: str,
+                         budget: str):
+        """registers a new project"""
+
+        self.validate_cif(company_cif)
+
+        self.validate_pattern(r"^[a-zA-Z0-9]{5,10}", project_acronym,"Invalid acronym")
+        self.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
+        self.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,"Invalid department")
+
+        self.validate_starting_date(date)
+        self.validate_budget(budget)
+
+        new_project = EnterpriseProject(company_cif=company_cif,
+                                        project_acronym=project_acronym,
+                                        project_description=project_description,
+                                        department=department,
+                                        starting_date=date,
+                                        project_budget=budget)
+
+        project_list = self.load_json_file(PROJECTS_STORE_FILE, [])
+
+        for project_item in project_list:
+            if project_item == new_project.to_json():
+                raise EnterpriseManagementException("Duplicated project in projects list")
+
+        project_list.append(new_project.to_json())
+
+        self.save_json_file(PROJECTS_STORE_FILE, project_list)
+
+        return new_project.project_id
+
+    def find_docs(self, date_str):
+        """
+        Generates a JSON report counting valid documents for a specific date.
+
+        Checks cryptographic hashes and timestamps to ensure historical data integrity.
+        Saves the output to 'resultado.json'.
+
+        Args:
+            date_str (str): date to query.
+
+        Returns:
+            number of documents found if report is successfully generated and saved.
+
+        Raises:
+            EnterpriseManagementException: On invalid date, file IO errors,
+                missing data, or cryptographic integrity failure.
+        """
+        self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
+                                           date_str,"Invalid date format")
+        self.validate_date(date_str)
+        date_list = self.get_documents(TEST_DOCUMENTS_STORE_FILE)
+
+        valid_counter = 0
+
+        # loop to find
+        for date_element in date_list:
+            if self.validate_date_element(date_element, date_str):
+                valid_counter += 1
+
+        if valid_counter == 0:
+            raise EnterpriseManagementException("No documents found")
+
+        self.write_report(date_str, valid_counter)
+
+        return valid_counter
 
     @staticmethod
     def validate_cif(cif: str):
@@ -64,7 +137,7 @@ class EnterpriseManager:
     def validate_starting_date(self, date_str):
         """validates the date format using regex"""
         self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
-                                           date_str, "Invalid date format")
+                              date_str, "Invalid date format")
 
         my_date = self.validate_date(date_str)
 
@@ -74,93 +147,62 @@ class EnterpriseManager:
             raise EnterpriseManagementException("Invalid date format")
         return date_str
 
-    #pylint: disable=too-many-arguments, too-many-positional-arguments
-    def register_project(self,
-                         company_cif: str,
-                         project_acronym: str,
-                         project_description: str,
-                         department: str,
-                         date: str,
-                         budget: str):
-        """registers a new project"""
+    @staticmethod
+    def validate_date(date_str):
+        """Validates a date string to ensure it matches expected format"""
+        try:
+            return datetime.strptime(date_str, "%d/%m/%Y").date()
+        except ValueError as ex:
+            raise EnterpriseManagementException("Invalid date format") from ex
 
-        self.validate_cif(company_cif)
+    @staticmethod
+    def validate_pattern(pattern, value, message):
+        """Validates a pattern string to ensure it matches expected format"""
+        if not re.compile(pattern).fullmatch(value):
+            raise EnterpriseManagementException(message)
 
-        self.validate_pattern(r"^[a-zA-Z0-9]{5,10}",
-                                           project_acronym,"Invalid acronym")
-        self.validate_pattern(r"^.{10,30}$", project_description,"Invalid description format")
-        self.validate_pattern(r"(HR|FINANCE|LEGAL|LOGISTICS)",department,
-                                           "Invalid department")
+    @staticmethod
+    def validate_budget(budget: str):
+        """Parses budget string into float"""
+        try:
+            budget_float = float(budget)
+        except ValueError as exc:
+            raise EnterpriseManagementException("Invalid budget amount") from exc
 
-        self.validate_starting_date(date)
+        budget_str = str(budget_float)
+        if '.' in budget_str:
+            decimals = len(budget_str.split('.')[1])
+            if decimals > 2:
+                raise EnterpriseManagementException("Invalid budget amount")
 
-        self.check_budget(budget)
+        if budget_float < 50000 or budget_float > 1000000:
+            raise EnterpriseManagementException("Invalid budget amount")
 
-        new_project = EnterpriseProject(company_cif=company_cif,
-                                        project_acronym=project_acronym,
-                                        project_description=project_description,
-                                        department=department,
-                                        starting_date=date,
-                                        project_budget=budget)
+    def validate_date_element(self, date_element, date_str):
+        """Validates date string to ensure it matches expected format"""
 
-        project_list = self.load_json_file(PROJECTS_STORE_FILE, [])
+        time_val = date_element["register_date"]
 
-        for project_item in project_list:
-            if project_item == new_project.to_json():
-                raise EnterpriseManagementException("Duplicated project in projects list")
+        # string conversion for easy match
+        date_string_convert = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
 
-        project_list.append(new_project.to_json())
+        if date_string_convert == date_str:
+            date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
+            with freeze_time(date_object):
+                # check the project id (thanks to freezetime)
+                # if project_id are different then the data has been manipulated
+                self.validate_document_signature(date_element)
+            return True
+        return False
 
-        self.save_json_file(PROJECTS_STORE_FILE, project_list)
+    @staticmethod
+    def validate_document_signature(date_element):
+        """Validates document signature integrity"""
 
-        return new_project.project_id
+        project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
 
-    def find_docs(self, date_str):
-        """
-        Generates a JSON report counting valid documents for a specific date.
-
-        Checks cryptographic hashes and timestamps to ensure historical data integrity.
-        Saves the output to 'resultado.json'.
-
-        Args:
-            date_str (str): date to query.
-
-        Returns:
-            number of documents found if report is successfully generated and saved.
-
-        Raises:
-            EnterpriseManagementException: On invalid date, file IO errors,
-                missing data, or cryptographic integrity failure.
-        """
-        self.validate_pattern(r"^(([0-2]\d|3[0-1])\/(0\d|1[0-2])\/\d\d\d\d)$",
-                                           date_str,"Invalid date format")
-        self.validate_date(date_str)
-        date_list = self.load_documents()
-
-        valid_counter = 0
-
-        # loop to find
-        for date_element in date_list:
-            if self.is_valid_date_element(date_element, date_str):
-                valid_counter += 1
-
-        if valid_counter == 0:
-            raise EnterpriseManagementException("No documents found")
-
-        # prepare json text
-        date_now = datetime.now(timezone.utc).timestamp()
-
-        data_input = {"Querydate":  date_str,
-             "ReportDate": date_now,
-             "Numfiles": valid_counter,
-             }
-
-        store_report = self.load_json_file(TEST_NUMDOCS_STORE_FILE, [])
-        store_report.append(data_input)
-
-        self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
-
-        return valid_counter
+        if project_doc.document_signature != date_element["document_signature"]:
+            raise EnterpriseManagementException("Inconsistent document signature")
 
     @staticmethod
     def load_json_file(path, default_value):
@@ -185,69 +227,26 @@ class EnterpriseManager:
             raise EnterpriseManagementException("JSON Decode Error - Wrong JSON Format") from ex
 
     @staticmethod
-    def validate_date(date_str):
-        """Validates a date string to ensure it matches expected format"""
-        try:
-            return datetime.strptime(date_str, "%d/%m/%Y").date()
-        except ValueError as ex:
-            raise EnterpriseManagementException("Invalid date format") from ex
-
-    @staticmethod
-    def validate_pattern(pattern, value, message):
-        """Validates a pattern string to ensure it matches expected format"""
-        if not re.compile(pattern).fullmatch(value):
-            raise EnterpriseManagementException(message)
-
-    @staticmethod
-    def check_budget(budget: str):
-        """Parses budget string into float"""
-        try:
-            budget_float = float(budget)
-        except ValueError as exc:
-            raise EnterpriseManagementException("Invalid budget amount") from exc
-
-        budget_str = str(budget_float)
-        if '.' in budget_str:
-            decimals = len(budget_str.split('.')[1])
-            if decimals > 2:
-                raise EnterpriseManagementException("Invalid budget amount")
-
-        if budget_float < 50000 or budget_float > 1000000:
-            raise EnterpriseManagementException("Invalid budget amount")
-
-    @staticmethod
-    def load_documents():
+    def get_documents(path):
         """Handles file loading with exception management"""
         # For find_docs
         try:
-            with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
+            with open(path, "r", encoding="utf-8", newline="") as file:
                 return json.load(file)
 
         except FileNotFoundError as ex:
             raise EnterpriseManagementException("Wrong file  or file path") from ex
 
-    @staticmethod
-    def validate_document_signature(date_element):
-        """Validates document signature integrity"""
 
-        project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
+    def write_report(self, date_str, valid_counter):
+        # prepare json text
+        date_now = datetime.now(timezone.utc).timestamp()
+        data_input = {"Querydate": date_str,
+                      "ReportDate": date_now,
+                      "Numfiles": valid_counter,
+                      }
 
-        if project_doc.document_signature != date_element["document_signature"]:
-            raise EnterpriseManagementException("Inconsistent document signature")
+        store_report = self.load_json_file(TEST_NUMDOCS_STORE_FILE, [])
+        store_report.append(data_input)
 
-    def is_valid_date_element(self, date_element, date_str):
-        """Validates date string to ensure it matches expected format"""
-
-        time_val = date_element["register_date"]
-
-        # string conversion for easy match
-        date_string_convert = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
-
-        if date_string_convert == date_str:
-            date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
-            with freeze_time(date_object):
-                # check the project id (thanks to freezetime)
-                # if project_id are different then the data has been manipulated
-                self.validate_document_signature(date_element)
-            return True
-        return False
+        self.save_json_file(TEST_NUMDOCS_STORE_FILE, store_report)
