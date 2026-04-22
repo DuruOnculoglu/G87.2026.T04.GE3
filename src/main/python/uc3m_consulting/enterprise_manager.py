@@ -16,7 +16,6 @@ class EnterpriseManager:
     def __init__(self):
         pass
 
-    #pylint: disable=too-many-arguments, too-many-positional-arguments
     def register_project(self,
                          company_cif: str,
                          project_acronym: str,
@@ -221,6 +220,8 @@ class EnterpriseManager:
 
 
     def write_report(self, date_str, valid_counter):
+        """ Report entry created with query date, current timestamp, and number of valid
+            files. Appends information to existing report file."""
         date_now = datetime.now(timezone.utc).timestamp()
         data_input = {"Querydate": date_str,
                       "ReportDate": date_now,
