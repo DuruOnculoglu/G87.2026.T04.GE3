@@ -151,18 +151,7 @@ class EnterpriseManager:
 
         # loop to find
         for date_element in date_list:
-            time_val = date_element["register_date"]
-
-            # string conversion for easy match
-            date_string_convert = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
-
-            if date_string_convert == date_str:
-                date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
-                with freeze_time(date_object):
-                    # check the project id (thanks to freezetime)
-                    # if project_id are different then the data has been manipulated
-                    self.validate_document_signature(date_element)
-
+            if self.is_valid_date_element(date_element, date_str):
                 valid_counter += 1
 
         if valid_counter == 0:
@@ -246,3 +235,19 @@ class EnterpriseManager:
         if project_doc.document_signature != date_element["document_signature"]:
             raise EnterpriseManagementException("Inconsistent document signature")
 
+    def is_valid_date_element(self, date_element, date_str):
+        """Validates date string to ensure it matches expected format"""
+
+        time_val = date_element["register_date"]
+
+        # string conversion for easy match
+        date_string_convert = datetime.fromtimestamp(time_val).strftime("%d/%m/%Y")
+
+        if date_string_convert == date_str:
+            date_object = datetime.fromtimestamp(time_val, tz=timezone.utc)
+            with freeze_time(date_object):
+                # check the project id (thanks to freezetime)
+                # if project_id are different then the data has been manipulated
+                self.validate_document_signature(date_element)
+            return True
+        return False
