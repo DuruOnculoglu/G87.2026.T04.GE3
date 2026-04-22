@@ -94,11 +94,7 @@ class EnterpriseManager:
 
         self.validate_starting_date(date)
 
-        try:
-            budget_float  = float(budget)
-        except ValueError as exc:
-            raise EnterpriseManagementException("Invalid budget amount") from exc
-
+        budget_float = EnterpriseManager._parse_budget(budget)
         budget_str = str(budget_float)
 
         if '.' in budget_str:
@@ -231,5 +227,11 @@ class EnterpriseManager:
         if not re.compile(pattern).fullmatch(value):
             raise EnterpriseManagementException(message)
 
-
+    @staticmethod
+    def _parse_budget(budget: str) -> float:
+        """Parses budget string into float"""
+        try:
+            return float(budget)
+        except ValueError as exc:
+            raise EnterpriseManagementException("Invalid budget amount") from exc
 
