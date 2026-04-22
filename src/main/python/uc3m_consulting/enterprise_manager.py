@@ -183,26 +183,6 @@ class EnterpriseManager:
         return valid_counter
 
     @staticmethod
-    def _load_documents():
-        """Handles file loading with exception management"""
-
-        try:
-            with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
-                return json.load(file)
-
-        except FileNotFoundError as ex:
-            raise EnterpriseManagementException("Wrong file  or file path") from ex
-
-    @staticmethod
-    def _validate_document_signature(date_element):
-        """Validates document signature integrity"""
-
-        project_doc = ProjectDocument(date_element["project_id"],date_element["file_name"])
-
-        if project_doc.document_signature != date_element["document_signature"]:
-            raise EnterpriseManagementException("Inconsistent document signature")
-
-    @staticmethod
     def load_json_file(path, default_value):
         """Reads a JSON file, returning the default value if the file does not exist"""
         try:
@@ -245,4 +225,24 @@ class EnterpriseManager:
             return float(budget)
         except ValueError as exc:
             raise EnterpriseManagementException("Invalid budget amount") from exc
+
+    @staticmethod
+    def _load_documents():
+        """Handles file loading with exception management"""
+        # For find_docs
+        try:
+            with open(TEST_DOCUMENTS_STORE_FILE, "r", encoding="utf-8", newline="") as file:
+                return json.load(file)
+
+        except FileNotFoundError as ex:
+            raise EnterpriseManagementException("Wrong file  or file path") from ex
+
+    @staticmethod
+    def _validate_document_signature(date_element):
+        """Validates document signature integrity"""
+
+        project_doc = ProjectDocument(date_element["project_id"], date_element["file_name"])
+
+        if project_doc.document_signature != date_element["document_signature"]:
+            raise EnterpriseManagementException("Inconsistent document signature")
 
