@@ -1,0 +1,4 @@
+(.venv) ryanmichaelnuera@Ryans-MacBook-Pro-9 G87.2026.T04.GE3 % pylint src/main/python/uc3m_consulting
+
+-------------------------------------------------------------------
+Your code has been rated at 10.00/10 (previous run: 9.57/10, +0.43)
